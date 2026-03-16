@@ -17,6 +17,14 @@ export default function InferenceTerminal({ onSubmit, tokens, isGenerating, stre
     setPrompt('');
   };
 
+  const formatEntryText = (entry) => {
+    if (entry.role !== 'assistant') return entry.text;
+    return entry.text
+      .replace(/\\n/g, '\n')
+      .replace(/\\t/g, '\t')
+      .replace(/\r\n/g, '\n');
+  };
+
   return (
     <div className="inference-terminal">
       <div className="terminal-header">
@@ -35,7 +43,7 @@ export default function InferenceTerminal({ onSubmit, tokens, isGenerating, stre
           tokens.map((entry, i) => (
             <div key={i} className={`terminal-entry terminal-entry-${entry.role}`}>
               <span className="entry-role">{entry.role === 'user' ? '> ' : '< '}</span>
-              <span className="entry-text">{entry.text}</span>
+              <span className="entry-text">{formatEntryText(entry)}</span>
             </div>
           ))
         )}

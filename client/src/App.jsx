@@ -13,6 +13,7 @@ import { DEFAULT_ROOM, HEARTBEAT_INTERVAL_MS, ENGINE_MODEL_ID } from './lib/cons
 
 function App() {
   const [myPeerId] = useState(() => crypto.randomUUID());
+  const [username, setUsername] = useState(() => localStorage.getItem('gcc_username') || '');
   const [roomInput, setRoomInput] = useState(DEFAULT_ROOM);
   const [joined, setJoined] = useState(false);
   const [tokens, setTokens] = useState([]);        // { role: 'user'|'assistant', text }
@@ -163,11 +164,13 @@ function App() {
 
   // Join room
   const handleJoinRoom = useCallback(() => {
-    if (!roomInput.trim() || !role) return;
+    const cleanUsername = username.trim();
+    if (!roomInput.trim() || !role || !cleanUsername) return;
     const gpuCapable = hasWebGPU();
-    signaling.joinRoom(roomInput.trim(), gpuCapable, role);
+    signaling.joinRoom(roomInput.trim(), gpuCapable, role, cleanUsername);
+    localStorage.setItem('gcc_username', cleanUsername);
     setJoined(true);
-  }, [roomInput, role, signaling]);
+  }, [roomInput, role, signaling, username]);
 
   // Leave room
   const handleLeaveRoom = useCallback(() => {
@@ -251,8 +254,11 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Green Compute Cluster</h1>
-        <span className="peer-id" title={myPeerId}>Node: {myPeerId.slice(0, 8)}</span>
+        <h1 className="brand-title">
+          Green Compute Cluster
+          <img src="/sprout-icon.svg" alt="sprout" className="brand-sprout" />
+        </h1>
+        <span className="peer-id" title={myPeerId}>Node: {username.trim() || myPeerId.slice(0, 8)}</span>
       </header>
 
       {!joined ? (
@@ -285,12 +291,19 @@ function App() {
             <div className="join-form">
               <input
                 type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username..."
+                onKeyDown={(e) => e.key === 'Enter' && handleJoinRoom()}
+              />
+              <input
+                type="text"
                 value={roomInput}
                 onChange={(e) => setRoomInput(e.target.value)}
                 placeholder="Room name..."
                 onKeyDown={(e) => e.key === 'Enter' && handleJoinRoom()}
               />
-              <button onClick={handleJoinRoom} disabled={signaling.connectionStatus !== 'connected' || !role}>
+              <button onClick={handleJoinRoom} disabled={signaling.connectionStatus !== 'connected' || !role || !username.trim()}>
                 {signaling.connectionStatus === 'connected'
                   ? (role ? 'Join Room' : 'Select a role')
                   : 'Connecting...'}
@@ -339,6 +352,7 @@ function App() {
               <div className="donor-full">
                 <DonorDashboard
                   myPeerId={myPeerId}
+                  myUsername={username.trim()}
                   roomId={signaling.roomId}
                   connectionStatus={signaling.connectionStatus}
                   peers={signaling.peers}

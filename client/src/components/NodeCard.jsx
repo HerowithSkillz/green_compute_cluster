@@ -3,11 +3,12 @@ import React from 'react';
 export default function NodeCard({ peer, channelStatus, rtt }) {
   const status = channelStatus || 'closed';
   const statusColor = status === 'open' ? '#00ff88' : status === 'connecting' ? '#ffaa00' : '#ff4444';
+  const label = (peer.username || '').trim() || `${peer.peerId.slice(0, 8)}...`;
 
   return (
     <div className="node-card">
       <div className="node-card-header">
-        <span className="node-id" title={peer.peerId}>{peer.peerId.slice(0, 8)}...</span>
+        <span className="node-id" title={peer.peerId}>{label}</span>
         <span className={`role-badge role-${peer.role || 'unknown'}`}>
           {peer.role === 'donor' ? 'Donor' : peer.role === 'receiver' ? 'Receiver' : '?'}
         </span>

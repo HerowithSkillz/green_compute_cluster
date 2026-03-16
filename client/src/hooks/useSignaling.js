@@ -3,13 +3,13 @@ import { io } from 'socket.io-client';
 import { SIGNAL_URL } from '../lib/constants.js';
 
 /**
- * useSignaling — Socket.IO lifecycle manager.
+ * useSignaling - Socket.IO lifecycle manager.
  * Owns the signaling connection and translates server events into a reactive peer registry.
  * Does NOT know anything about WebRTC.
  */
 export function useSignaling(myPeerId) {
   const socketRef = useRef(null);
-  const peersRef = useRef(new Map()); // peerId → { socketId, gpuCapable, role, joinedAt }
+  const peersRef = useRef(new Map()); // peerId -> { socketId, gpuCapable, role, username, joinedAt }
   const [roomId, setRoomId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('idle'); // idle | connecting | connected | error
   const [peers, setPeers] = useState([]); // reactive snapshot for UI
@@ -23,11 +23,17 @@ export function useSignaling(myPeerId) {
     setPeers([...peersRef.current.entries()].map(([id, meta]) => ({ peerId: id, ...meta })));
   }, []);
 
-  const joinRoom = useCallback((targetRoomId, gpuCapable = true, role = 'donor') => {
+  const joinRoom = useCallback((targetRoomId, gpuCapable = true, role = 'donor', username = '') => {
     const socket = socketRef.current;
     if (!socket || !socket.connected) return;
 
-    socket.emit('join-room', { roomId: targetRoomId, peerId: myPeerId, gpuCapable, role });
+    socket.emit('join-room', {
+      roomId: targetRoomId,
+      peerId: myPeerId,
+      gpuCapable,
+      role,
+      username: String(username || '').trim(),
+    });
     setRoomId(targetRoomId);
   }, [myPeerId]);
 
@@ -73,20 +79,26 @@ export function useSignaling(myPeerId) {
     // Server sends existing peers on join
     socket.on('room-peers', (existingPeers) => {
       peersRef.current.clear();
-      for (const p of existingPeers) {
-        peersRef.current.set(p.peerId, { socketId: p.socketId, gpuCapable: p.gpuCapable, role: p.role, joinedAt: p.joinedAt });
+      for (const peer of existingPeers) {
+        peersRef.current.set(peer.peerId, {
+          socketId: peer.socketId,
+          gpuCapable: peer.gpuCapable,
+          role: peer.role,
+          username: peer.username,
+          joinedAt: peer.joinedAt,
+        });
       }
       syncPeers();
 
       // Initiate WebRTC with each existing peer (we are the initiator)
-      for (const p of existingPeers) {
-        onPeerJoinedRef.current?.(p.peerId, true);
+      for (const peer of existingPeers) {
+        onPeerJoinedRef.current?.(peer.peerId, true);
       }
     });
 
-    // New peer joins after us — we wait as answerer (the joiner initiates)
-    socket.on('peer-joined', ({ peerId, gpuCapable, role }) => {
-      peersRef.current.set(peerId, { gpuCapable, role, joinedAt: Date.now() });
+    // New peer joins after us - we wait as answerer (the joiner initiates)
+    socket.on('peer-joined', ({ peerId, gpuCapable, role, username }) => {
+      peersRef.current.set(peerId, { gpuCapable, role, username, joinedAt: Date.now() });
       syncPeers();
       onPeerJoinedRef.current?.(peerId, false);
     });

@@ -7,6 +7,11 @@ export default function EarthHologramGlobe({
   size = 260,
 }) {
   const mountRef = useRef(null);
+  const isComputingRef = useRef(isComputing);
+
+  useEffect(() => {
+    isComputingRef.current = isComputing;
+  }, [isComputing]);
 
   useEffect(() => {
     const host = mountRef.current;
@@ -25,6 +30,15 @@ export default function EarthHologramGlobe({
 
     const globeGroup = new THREE.Group();
     scene.add(globeGroup);
+
+    const fillGeo = new THREE.SphereGeometry(4.95, 64, 64);
+    const fillMat = new THREE.MeshBasicMaterial({
+      color: 0x78ffb0,
+      transparent: true,
+      opacity: 0.018,
+    });
+    const fillSphere = new THREE.Mesh(fillGeo, fillMat);
+    globeGroup.add(fillSphere);
 
     const loader = new THREE.TextureLoader();
     const maskUrl =
@@ -70,11 +84,13 @@ export default function EarthHologramGlobe({
       dotGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
 
       dotMat = new THREE.PointsMaterial({
-        size: isComputing ? 0.042 : 0.04,
-        color: 0x00ff99,
+        size: 0.041,
+        color: 0x00ff66,
         transparent: true,
         opacity: 1.0,
         blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        depthTest: false,
       });
 
       earthPoints = new THREE.Points(dotGeo, dotMat);
@@ -86,9 +102,12 @@ export default function EarthHologramGlobe({
 
     const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
     let rafId = 0;
+    const baseSpeed = 0.0018;
 
     const animate = () => {
-      if (!prefersReducedMotion) globeGroup.rotation.y += isComputing ? 0.0036 : 0.003;
+      if (!prefersReducedMotion) {
+        globeGroup.rotation.y += isComputingRef.current ? baseSpeed * 3 : baseSpeed;
+      }
       renderer.render(scene, camera);
       rafId = requestAnimationFrame(animate);
     };
@@ -101,9 +120,11 @@ export default function EarthHologramGlobe({
       if (earthPoints) globeGroup.remove(earthPoints);
       if (dotGeo) dotGeo.dispose();
       if (dotMat) dotMat.dispose();
+      fillGeo.dispose();
+      fillMat.dispose();
       renderer.dispose();
     };
-  }, [isComputing, size]);
+  }, [size]);
 
   return (
     <div className="earth-holo-container" style={{ ['--earth-size']: `${size}px` }}>

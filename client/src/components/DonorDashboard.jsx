@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import EarthHologramGlobe from './EarthHologramGlobe.jsx';
-import SwarmLog from './SwarmLog.jsx';
 
 function formatAgo(ts) {
   if (!ts) return '—';
@@ -12,10 +11,11 @@ function formatAgo(ts) {
   return `${deltaHr}h ago`;
 }
 
-function PeerPill({ id, role, status }) {
+function PeerPill({ id, username, role, status }) {
+  const label = (username || '').trim() || id.slice(0, 8);
   return (
     <div className={`peer-pill peer-pill-${status || 'closed'}`}>
-      <div className="peer-pill-id" title={id}>{id.slice(0, 8)}</div>
+      <div className="peer-pill-id" title={id}>{label}</div>
       <div className={`peer-pill-role peer-pill-role-${role || 'unknown'}`}>
         {role === 'donor' ? 'Donor' : role === 'receiver' ? 'Receiver' : '?'}
       </div>
@@ -25,6 +25,7 @@ function PeerPill({ id, role, status }) {
 
 export default function DonorDashboard({
   myPeerId,
+  myUsername,
   roomId,
   connectionStatus,
   peers,
@@ -36,11 +37,10 @@ export default function DonorDashboard({
   isComputing,
   servedCount,
   lastServedAt,
-  logs,
 }) {
   const peerStats = useMemo(() => {
     const allPeers = [
-      { peerId: myPeerId, role: 'donor', joinedAt: Date.now(), gpuCapable: true, self: true },
+      { peerId: myPeerId, role: 'donor', username: myUsername, joinedAt: Date.now(), gpuCapable: true, self: true },
       ...(peers || []),
     ];
 
@@ -179,7 +179,7 @@ export default function DonorDashboard({
           <div className="globe-footer">
             <div className="globe-footer-row">
               <span className="globe-footer-k">Donor Node</span>
-              <span className="globe-footer-v" title={myPeerId}>{myPeerId.slice(0, 12)}</span>
+              <span className="globe-footer-v" title={myPeerId}>{(myUsername || '').trim() || myPeerId.slice(0, 12)}</span>
             </div>
             <div className="globe-footer-row">
               <span className="globe-footer-k">Sustainability</span>
@@ -206,6 +206,7 @@ export default function DonorDashboard({
                     <PeerPill
                       key={p.peerId}
                       id={p.peerId}
+                      username={p.username}
                       role={p.role}
                       status={channelStatus.get(p.peerId)}
                     />
@@ -221,6 +222,7 @@ export default function DonorDashboard({
                 <PeerPill
                   key={p.peerId}
                   id={p.peerId}
+                  username={p.username}
                   role="donor"
                   status={p.self ? 'open' : channelStatus.get(p.peerId)}
                 />
@@ -230,15 +232,6 @@ export default function DonorDashboard({
         </section>
       </div>
 
-      <section className="panel panel-activity">
-        <div className="panel-header">
-          <h2>Swarm Activity</h2>
-          <span className="panel-subtitle">control-plane events</span>
-        </div>
-        <div className="activity-body">
-          <SwarmLog logs={logs} />
-        </div>
-      </section>
     </div>
   );
 }
