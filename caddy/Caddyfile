@@ -1,0 +1,6 @@
+signal.yourdomain.com {
+    reverse_proxy localhost:3001
+
+    # WebSocket upgrade headers are handled automatically by Caddy
+    # TLS certificates are provisioned automatically via Let's Encrypt
+}
