@@ -36,3 +36,4 @@ export const ENGINE_MODEL_ID = import.meta.env.VITE_ENGINE_MODEL || 'Qwen2.5-0.5
 // Timeouts
 export const HEARTBEAT_INTERVAL_MS = 5000;
 export const TASK_TIMEOUT_MS = 30000;
+export const RENDER_TIMEOUT_MS = 120000;
