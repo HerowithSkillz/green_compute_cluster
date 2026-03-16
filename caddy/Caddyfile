@@ -1,6 +1,28 @@
-signal.yourdomain.com {
-    reverse_proxy localhost:3001
+dev-ai.nomineelife.com {
+	# Serve the Vite build at https://dev-ai.nomineelife.com/cluster/
+	#
+	# Deployment note: on the server, point this to where you copy `client/dist`.
+	# Example: /var/www/green_compute_cluster/client/dist
+	root * /var/www/green_compute_cluster/client/dist
+	encode gzip
 
-    # WebSocket upgrade headers are handled automatically by Caddy
-    # TLS certificates are provisioned automatically via Let's Encrypt
+	# Reverse-proxy Socket.IO (WebSocket) + health check on the SAME origin.
+	# This avoids CORS issues and lets the client default SIGNAL_URL to window.location.origin.
+	handle_path /socket.io* {
+		reverse_proxy localhost:3001
+	}
+	handle_path /health {
+		reverse_proxy localhost:3001
+	}
+
+	# SPA under /cluster/ (Vite base: '/cluster/')
+	handle_path /cluster/* {
+		try_files {path} /index.html
+		file_server
+	}
+
+	# Convenience redirect for bare domain
+	handle {
+		redir /cluster/ 302
+	}
 }

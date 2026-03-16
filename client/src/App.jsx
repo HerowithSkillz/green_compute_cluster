@@ -5,6 +5,7 @@ import { useAgenticSwarm } from './hooks/useAgenticSwarm.js';
 import ClusterDashboard from './components/ClusterDashboard.jsx';
 import InferenceTerminal from './components/InferenceTerminal.jsx';
 import SwarmLog from './components/SwarmLog.jsx';
+import HolographicGlobe from './components/HolographicGlobe.jsx';
 import { MSG, encodeMessage } from './lib/protocol.js';
 import { getEngine, hasWebGPU, getGPUInfo } from './lib/webllm.js';
 import { DEFAULT_ROOM, HEARTBEAT_INTERVAL_MS, ENGINE_MODEL_ID } from './lib/constants.js';
@@ -22,6 +23,7 @@ function App() {
   const [gpuAvailable] = useState(() => hasWebGPU());
   const [role, setRole] = useState(null); // 'donor' | 'receiver'
   const donorIndexRef = useRef(0); // round-robin counter for donor selection
+  const [isServingInference, setIsServingInference] = useState(false);
 
   // Auto-select receiver when no WebGPU
   useEffect(() => {
@@ -140,6 +142,7 @@ function App() {
 
   // Handle remote inference request (this node runs inference for another peer)
   const handleRemoteInferenceRequest = useCallback(async (fromPeerId, requestId, prompt, maxTokens) => {
+    setIsServingInference(true);
     try {
       const { generate } = await import(/* @vite-ignore */ './lib/webllm.js');
       await generate(prompt, (token) => {
@@ -148,6 +151,8 @@ function App() {
       webrtc.sendToPeer(fromPeerId, encodeMessage(MSG.INFER_DONE, { requestId }), 'control');
     } catch (err) {
       webrtc.sendToPeer(fromPeerId, encodeMessage(MSG.INFER_ERROR, { requestId, error: err.message }), 'control');
+    } finally {
+      setIsServingInference(false);
     }
   }, [webrtc]);
 
@@ -332,6 +337,12 @@ function App() {
                 openChannelCount={webrtc.openChannelCount}
                 myRole={role}
               />
+              {role === 'donor' && (
+                <HolographicGlobe
+                  isComputing={isServingInference || isGenerating}
+                  connectedReceivers={signaling.peers.filter(p => p.role === 'receiver').length}
+                />
+              )}
               <SwarmLog logs={swarm.swarmLog} />
             </div>
             <div className="col-right">

@@ -505,3 +505,137 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   background: rgba(100, 116, 139, 0.15);
   color: var(--text-muted);
 }
+
+/* Holographic Globe */
+.globe-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  position: relative;
+}
+
+.globe-glow {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 255, 136, 0.12) 0%, rgba(0, 255, 136, 0.04) 50%, transparent 70%);
+  filter: blur(20px);
+  animation: globe-pulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes globe-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.globe-wrapper {
+  width: 180px;
+  height: 180px;
+  animation: globe-spin 12s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.3));
+}
+
+@keyframes globe-spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+.globe-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.globe-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  opacity: 0.6;
+}
+
+.globe-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.7;
+  opacity: 0.25;
+}
+
+.globe-orbit {
+  fill: none;
+  stroke: var(--blue);
+  stroke-width: 0.8;
+  opacity: 0.3;
+  stroke-dasharray: 8 4;
+  animation: orbit-dash 8s linear infinite;
+}
+
+@keyframes orbit-dash {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -48; }
+}
+
+.globe-node {
+  fill: var(--accent);
+  opacity: 0.9;
+  animation: node-glow 2s ease-in-out infinite alternate;
+}
+
+.globe-node:nth-child(odd) { animation-delay: -1s; }
+
+@keyframes node-glow {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+.globe-connection {
+  stroke: var(--accent);
+  stroke-width: 0.5;
+  opacity: 0.2;
+  stroke-dasharray: 4 6;
+  animation: connection-flow 3s linear infinite;
+}
+
+@keyframes connection-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -30; }
+}
+
+.globe-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+}
+
+.globe-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background 0.3s;
+}
+
+.globe-status-dot.idle {
+  background: var(--text-muted);
+}
+
+.globe-status-dot.computing {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 1s infinite;
+}
+
+.globe-status-text {
+  color: var(--text-secondary);
+}
+
+.globe-receivers {
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: var(--blue);
+  font-family: var(--font-mono);
+}

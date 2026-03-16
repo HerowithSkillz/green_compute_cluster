@@ -5,8 +5,15 @@ import { RoomManager } from './rooms.js';
 
 const app = express();
 const httpServer = createServer(app);
+const allowedOrigins = (process.env.CLIENT_ORIGIN || '*')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 const io = new Server(httpServer, {
-  cors: { origin: process.env.CLIENT_ORIGIN || '*', methods: ['GET', 'POST'] },
+  cors: {
+    origin: allowedOrigins.includes('*') ? '*' : allowedOrigins,
+    methods: ['GET', 'POST'],
+  },
   transports: ['websocket'],
 });
 
