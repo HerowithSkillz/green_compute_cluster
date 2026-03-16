@@ -1,7 +1,7 @@
 import React from 'react';
 import NodeCard from './NodeCard.jsx';
 
-export default function ClusterDashboard({ peers, channelStatus, rttMap, connectionStatus, roomId, openChannelCount }) {
+export default function ClusterDashboard({ peers, channelStatus, rttMap, connectionStatus, roomId, openChannelCount, myRole }) {
   return (
     <div className="cluster-dashboard">
       <div className="dashboard-header">
@@ -24,6 +24,14 @@ export default function ClusterDashboard({ peers, channelStatus, rttMap, connect
           <div className="stat-chip">
             <span className="stat-chip-label">Channels</span>
             <span className="stat-chip-value">{openChannelCount}</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-label">Donors</span>
+            <span className="stat-chip-value">{peers.filter(p => p.role === 'donor').length + (myRole === 'donor' ? 1 : 0)}</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-label">Receivers</span>
+            <span className="stat-chip-value">{peers.filter(p => p.role === 'receiver').length + (myRole === 'receiver' ? 1 : 0)}</span>
           </div>
         </div>
       </div>

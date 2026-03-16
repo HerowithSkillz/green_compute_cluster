@@ -430,4 +430,78 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     border-bottom: 1px solid var(--border);
     max-height: 300px;
   }
+  .role-selector {
+    flex-direction: column;
+  }
+}
+
+/* Role Selector (Join Panel) */
+.role-selector {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.role-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 12px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.role-option:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+.role-option.role-selected {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.role-option:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.role-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.role-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Role Badges */
+.role-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-donor {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.role-receiver {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--blue);
+}
+
+.role-unknown {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--text-muted);
 }

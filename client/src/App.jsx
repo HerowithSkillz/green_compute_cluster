@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSignaling } from './hooks/useSignaling.js';
 import { useWebRTC } from './hooks/useWebRTC.js';
 import { useAgenticSwarm } from './hooks/useAgenticSwarm.js';
@@ -20,6 +20,13 @@ function App() {
   const [modelStatus, setModelStatus] = useState('not loaded'); // not loaded | loading | ready
   const [loadProgress, setLoadProgress] = useState(null);
   const [gpuAvailable] = useState(() => hasWebGPU());
+  const [role, setRole] = useState(null); // 'donor' | 'receiver'
+  const donorIndexRef = useRef(0); // round-robin counter for donor selection
+
+  // Auto-select receiver when no WebGPU
+  useEffect(() => {
+    if (!gpuAvailable) setRole('receiver');
+  }, [gpuAvailable]);
 
   // Hooks
   const signaling = useSignaling(myPeerId);
@@ -58,7 +65,13 @@ function App() {
           break;
 
         case MSG.INFER_REQUEST: {
-          // Another peer wants us to run inference
+          if (role === 'receiver') {
+            const { requestId } = msg.payload;
+            webrtc.sendToPeer(fromPeerId, encodeMessage(MSG.INFER_ERROR, {
+              requestId, error: 'This node is a receiver and cannot serve inference'
+            }), 'control');
+            break;
+          }
           const { requestId, prompt, maxTokens } = msg.payload;
           handleRemoteInferenceRequest(fromPeerId, requestId, prompt, maxTokens);
           break;
@@ -87,7 +100,7 @@ function App() {
           break;
 
         case MSG.TASK_ASSIGN:
-          swarm.handleIncomingTask(fromPeerId, msg.payload);
+          if (role !== 'receiver') swarm.handleIncomingTask(fromPeerId, msg.payload);
           break;
 
         case MSG.TASK_DONE:
@@ -99,7 +112,7 @@ function App() {
           break;
       }
     };
-  }, [webrtc, swarm]);
+  }, [webrtc, swarm, role]);
 
   // Heartbeat interval
   useEffect(() => {
@@ -140,11 +153,11 @@ function App() {
 
   // Join room
   const handleJoinRoom = useCallback(() => {
-    if (!roomInput.trim()) return;
+    if (!roomInput.trim() || !role) return;
     const gpuCapable = hasWebGPU();
-    signaling.joinRoom(roomInput.trim(), gpuCapable);
+    signaling.joinRoom(roomInput.trim(), gpuCapable, role);
     setJoined(true);
-  }, [roomInput, signaling]);
+  }, [roomInput, role, signaling]);
 
   // Leave room
   const handleLeaveRoom = useCallback(() => {
@@ -171,17 +184,41 @@ function App() {
     setTokens(prev => [...prev, { role: 'user', text: prompt }]);
     setIsGenerating(true);
 
-    // Check if we have open peers to distribute to
-    const openPeers = signaling.peers.filter(
-      p => webrtc.channelStatus.get(p.peerId) === 'open'
-    );
+    if (role === 'receiver') {
+      // RECEIVER: send INFER_REQUEST to a donor
+      const donorPeers = signaling.peers.filter(
+        p => p.role === 'donor' && webrtc.channelStatus.get(p.peerId) === 'open'
+      );
 
-    if (openPeers.length > 0) {
-      // Use swarm dispatch
-      setStreamingFrom('swarm');
+      if (donorPeers.length === 0) {
+        setTokens(prev => [...prev, { role: 'assistant', text: '[No donors available. Please wait for a GPU donor to join the room.]' }]);
+        setIsGenerating(false);
+        return;
+      }
+
+      const donor = donorPeers[donorIndexRef.current % donorPeers.length];
+      donorIndexRef.current++;
+
+      const requestId = crypto.randomUUID();
+      setStreamingFrom(`donor:${donor.peerId.slice(0, 8)}`);
       setTokens(prev => [...prev, { role: 'assistant', text: '' }]);
 
-      const result = await swarm.submitPrompt(prompt, (token) => {
+      webrtc.sendToPeer(
+        donor.peerId,
+        encodeMessage(MSG.INFER_REQUEST, { requestId, prompt, maxTokens: 512 }),
+        'inference'
+      );
+      // Response streamed via existing INFER_TOKEN/DONE/ERROR handlers
+      return;
+    }
+
+    // DONOR: local inference
+    setStreamingFrom('local');
+    setTokens(prev => [...prev, { role: 'assistant', text: '' }]);
+
+    try {
+      const { generate } = await import(/* @vite-ignore */ './lib/webllm.js');
+      await generate(prompt, (token) => {
         setTokens(prev => {
           const last = prev[prev.length - 1];
           if (last && last.role === 'assistant') {
@@ -190,33 +227,13 @@ function App() {
           return [...prev, { role: 'assistant', text: token }];
         });
       });
-
-      setIsGenerating(false);
-      setStreamingFrom(null);
-    } else {
-      // Local inference
-      setStreamingFrom('local');
-      setTokens(prev => [...prev, { role: 'assistant', text: '' }]);
-
-      try {
-        const { generate } = await import(/* @vite-ignore */ './lib/webllm.js');
-        await generate(prompt, (token) => {
-          setTokens(prev => {
-            const last = prev[prev.length - 1];
-            if (last && last.role === 'assistant') {
-              return [...prev.slice(0, -1), { ...last, text: last.text + token }];
-            }
-            return [...prev, { role: 'assistant', text: token }];
-          });
-        });
-      } catch (err) {
-        setTokens(prev => [...prev, { role: 'assistant', text: `[Error: ${err.message}]` }]);
-      }
-
-      setIsGenerating(false);
-      setStreamingFrom(null);
+    } catch (err) {
+      setTokens(prev => [...prev, { role: 'assistant', text: `[Error: ${err.message}]` }]);
     }
-  }, [signaling.peers, webrtc.channelStatus, swarm]);
+
+    setIsGenerating(false);
+    setStreamingFrom(null);
+  }, [role, signaling.peers, webrtc.channelStatus, webrtc]);
 
   return (
     <div className="app">
@@ -230,8 +247,28 @@ function App() {
           <div className="join-card">
             <h2>Join a Cluster Room</h2>
             <p className="join-description">
-              Connect your browser to a P2P inference mesh. All compute runs locally via WebGPU — zero server cost.
+              Connect your browser to a P2P inference mesh. Choose your role below.
             </p>
+
+            <div className="role-selector">
+              <button
+                className={`role-option ${role === 'donor' ? 'role-selected' : ''}`}
+                onClick={() => setRole('donor')}
+                disabled={!gpuAvailable}
+                title={!gpuAvailable ? 'WebGPU not available on this device' : ''}
+              >
+                <span className="role-name">GPU Donor</span>
+                <span className="role-desc">Load & serve the LLM</span>
+              </button>
+              <button
+                className={`role-option ${role === 'receiver' ? 'role-selected' : ''}`}
+                onClick={() => setRole('receiver')}
+              >
+                <span className="role-name">Receiver</span>
+                <span className="role-desc">Send prompts, no GPU needed</span>
+              </button>
+            </div>
+
             <div className="join-form">
               <input
                 type="text"
@@ -240,13 +277,15 @@ function App() {
                 placeholder="Room name..."
                 onKeyDown={(e) => e.key === 'Enter' && handleJoinRoom()}
               />
-              <button onClick={handleJoinRoom} disabled={signaling.connectionStatus !== 'connected'}>
-                {signaling.connectionStatus === 'connected' ? 'Join Room' : 'Connecting...'}
+              <button onClick={handleJoinRoom} disabled={signaling.connectionStatus !== 'connected' || !role}>
+                {signaling.connectionStatus === 'connected'
+                  ? (role ? 'Join Room' : 'Select a role')
+                  : 'Connecting...'}
               </button>
             </div>
             <div className="join-info">
               <span className={`gpu-badge ${gpuAvailable ? 'gpu-yes' : 'gpu-no'}`}>
-                {gpuAvailable ? 'WebGPU Available' : 'No WebGPU — CPU Only'}
+                {gpuAvailable ? 'WebGPU Available' : 'No WebGPU'}
               </span>
               <span className={`signal-badge status-${signaling.connectionStatus}`}>
                 Signal: {signaling.connectionStatus}
@@ -261,21 +300,25 @@ function App() {
               <span>Room: <strong>{signaling.roomId}</strong></span>
               <button className="btn-leave" onClick={handleLeaveRoom}>Leave</button>
             </div>
-            <div className="model-controls">
-              {modelStatus === 'not loaded' && (
-                <button className="btn-load-model" onClick={handleLoadModel}>
-                  Load LLM ({ENGINE_MODEL_ID.split('-').slice(0, 2).join('-')})
-                </button>
-              )}
-              {modelStatus === 'loading' && (
-                <span className="model-loading">
-                  Loading... {loadProgress ? `${(loadProgress.progress * 100).toFixed(0)}%` : ''}
-                </span>
-              )}
-              {modelStatus === 'ready' && (
-                <span className="model-ready">Model Ready</span>
-              )}
-            </div>
+            {role === 'donor' ? (
+              <div className="model-controls">
+                {modelStatus === 'not loaded' && (
+                  <button className="btn-load-model" onClick={handleLoadModel}>
+                    Load LLM ({ENGINE_MODEL_ID.split('-').slice(0, 2).join('-')})
+                  </button>
+                )}
+                {modelStatus === 'loading' && (
+                  <span className="model-loading">
+                    Loading... {loadProgress ? `${(loadProgress.progress * 100).toFixed(0)}%` : ''}
+                  </span>
+                )}
+                {modelStatus === 'ready' && (
+                  <span className="model-ready">Model Ready</span>
+                )}
+              </div>
+            ) : (
+              <span className="role-badge role-receiver">Receiver Mode</span>
+            )}
           </div>
 
           <div className="content-grid">
@@ -287,6 +330,7 @@ function App() {
                 connectionStatus={signaling.connectionStatus}
                 roomId={signaling.roomId}
                 openChannelCount={webrtc.openChannelCount}
+                myRole={role}
               />
               <SwarmLog logs={swarm.swarmLog} />
             </div>

@@ -1,11 +1,11 @@
 export class RoomManager {
-  #rooms = new Map(); // roomId → Map<peerId, { socketId, gpuCapable, joinedAt }>
+  #rooms = new Map(); // roomId → Map<peerId, { socketId, gpuCapable, role, joinedAt }>
 
-  join(roomId, peerId, socketId, gpuCapable) {
+  join(roomId, peerId, socketId, gpuCapable, role) {
     if (!this.#rooms.has(roomId)) this.#rooms.set(roomId, new Map());
     const room = this.#rooms.get(roomId);
     const existing = [...room.entries()].map(([id, meta]) => ({ peerId: id, ...meta }));
-    room.set(peerId, { socketId, gpuCapable, joinedAt: Date.now() });
+    room.set(peerId, { socketId, gpuCapable, role, joinedAt: Date.now() });
     return existing;
   }
 

@@ -17,17 +17,17 @@ app.get('/health', (_, res) => res.json({ status: 'ok', rooms: rooms.size() }));
 io.on('connection', (socket) => {
   console.log(`[+] Peer connected: ${socket.id}`);
 
-  socket.on('join-room', ({ roomId, peerId, gpuCapable }) => {
-    const existingPeers = rooms.join(roomId, peerId, socket.id, gpuCapable);
+  socket.on('join-room', ({ roomId, peerId, gpuCapable, role }) => {
+    const existingPeers = rooms.join(roomId, peerId, socket.id, gpuCapable, role);
 
     // Send existing peers to the new joiner
     socket.emit('room-peers', existingPeers);
 
     // Notify existing peers of the new joiner
-    socket.to(roomId).emit('peer-joined', { peerId, gpuCapable });
+    socket.to(roomId).emit('peer-joined', { peerId, gpuCapable, role });
 
     socket.join(roomId);
-    socket.data = { roomId, peerId };
+    socket.data = { roomId, peerId, role };
     console.log(`[room:${roomId}] ${peerId} joined. Total: ${existingPeers.length + 1}`);
   });
 
