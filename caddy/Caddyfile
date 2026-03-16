@@ -8,10 +8,11 @@ dev-ai.nomineelife.com {
 
 	# Reverse-proxy Socket.IO (WebSocket) + health check on the SAME origin.
 	# This avoids CORS issues and lets the client default SIGNAL_URL to window.location.origin.
-	handle_path /socket.io* {
+	# NOTE: do NOT use `handle_path` here (it would strip `/socket.io` and break Socket.IO).
+	handle /socket.io* {
 		reverse_proxy localhost:3001
 	}
-	handle_path /health {
+	handle /health {
 		reverse_proxy localhost:3001
 	}
 

@@ -4,11 +4,11 @@ import React from 'react';
  * HolographicGlobe — Animated wireframe globe with holographic effect.
  * Rotation speed scales with compute activity (isComputing prop).
  */
-export default function HolographicGlobe({ isComputing, connectedReceivers = 0 }) {
+export default function HolographicGlobe({ isComputing, connectedReceivers = 0, size = 180 }) {
   const spinDuration = isComputing ? '3s' : '12s';
 
   return (
-    <div className="globe-container">
+    <div className="globe-container" style={{ ['--globe-size']: `${size}px` }}>
       <div className="globe-glow" />
       <div className="globe-wrapper" style={{ animationDuration: spinDuration }}>
         <svg viewBox="0 0 200 200" className="globe-svg" xmlns="http://www.w3.org/2000/svg">

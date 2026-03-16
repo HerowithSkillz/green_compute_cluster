@@ -6,6 +6,7 @@ import ClusterDashboard from './components/ClusterDashboard.jsx';
 import InferenceTerminal from './components/InferenceTerminal.jsx';
 import SwarmLog from './components/SwarmLog.jsx';
 import HolographicGlobe from './components/HolographicGlobe.jsx';
+import DonorDashboard from './components/DonorDashboard.jsx';
 import { MSG, encodeMessage } from './lib/protocol.js';
 import { getEngine, hasWebGPU, getGPUInfo } from './lib/webllm.js';
 import { DEFAULT_ROOM, HEARTBEAT_INTERVAL_MS, ENGINE_MODEL_ID } from './lib/constants.js';
@@ -24,6 +25,8 @@ function App() {
   const [role, setRole] = useState(null); // 'donor' | 'receiver'
   const donorIndexRef = useRef(0); // round-robin counter for donor selection
   const [isServingInference, setIsServingInference] = useState(false);
+  const [servedCount, setServedCount] = useState(0);
+  const [lastServedAt, setLastServedAt] = useState(null);
 
   // Auto-select receiver when no WebGPU
   useEffect(() => {
@@ -142,6 +145,8 @@ function App() {
 
   // Handle remote inference request (this node runs inference for another peer)
   const handleRemoteInferenceRequest = useCallback(async (fromPeerId, requestId, prompt, maxTokens) => {
+    setServedCount((c) => c + 1);
+    setLastServedAt(Date.now());
     setIsServingInference(true);
     try {
       const { generate } = await import(/* @vite-ignore */ './lib/webllm.js');
@@ -186,6 +191,9 @@ function App() {
 
   // Submit inference prompt
   const handlePromptSubmit = useCallback(async (prompt) => {
+    // Donor nodes only serve remote requests; they don't originate prompts from the UI.
+    if (role === 'donor') return;
+
     setTokens(prev => [...prev, { role: 'user', text: prompt }]);
     setIsGenerating(true);
 
@@ -327,32 +335,48 @@ function App() {
           </div>
 
           <div className="content-grid">
-            <div className="col-left">
-              <ClusterDashboard
-                peers={signaling.peers}
-                channelStatus={webrtc.channelStatus}
-                rttMap={rttMap}
-                connectionStatus={signaling.connectionStatus}
-                roomId={signaling.roomId}
-                openChannelCount={webrtc.openChannelCount}
-                myRole={role}
-              />
-              {role === 'donor' && (
-                <HolographicGlobe
-                  isComputing={isServingInference || isGenerating}
-                  connectedReceivers={signaling.peers.filter(p => p.role === 'receiver').length}
+            {role === 'donor' ? (
+              <div className="donor-full">
+                <DonorDashboard
+                  myPeerId={myPeerId}
+                  roomId={signaling.roomId}
+                  connectionStatus={signaling.connectionStatus}
+                  peers={signaling.peers}
+                  channelStatus={webrtc.channelStatus}
+                  rttMap={rttMap}
+                  openChannelCount={webrtc.openChannelCount}
+                  modelStatus={modelStatus}
+                  loadProgress={loadProgress}
+                  isComputing={isServingInference}
+                  servedCount={servedCount}
+                  lastServedAt={lastServedAt}
+                  logs={swarm.swarmLog}
                 />
-              )}
-              <SwarmLog logs={swarm.swarmLog} />
-            </div>
-            <div className="col-right">
-              <InferenceTerminal
-                onSubmit={handlePromptSubmit}
-                tokens={tokens}
-                isGenerating={isGenerating}
-                streamingFrom={streamingFrom}
-              />
-            </div>
+              </div>
+            ) : (
+              <>
+                <div className="col-left">
+                  <ClusterDashboard
+                    peers={signaling.peers}
+                    channelStatus={webrtc.channelStatus}
+                    rttMap={rttMap}
+                    connectionStatus={signaling.connectionStatus}
+                    roomId={signaling.roomId}
+                    openChannelCount={webrtc.openChannelCount}
+                    myRole={role}
+                  />
+                  <SwarmLog logs={swarm.swarmLog} />
+                </div>
+                <div className="col-right">
+                  <InferenceTerminal
+                    onSubmit={handlePromptSubmit}
+                    tokens={tokens}
+                    isGenerating={isGenerating}
+                    streamingFrom={streamingFrom}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
