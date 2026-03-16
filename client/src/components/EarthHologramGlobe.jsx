@@ -7,12 +7,6 @@ export default function EarthHologramGlobe({
   size = 260,
 }) {
   const mountRef = useRef(null);
-  const isComputingRef = useRef(isComputing);
-
-  useEffect(() => {
-    isComputingRef.current = isComputing;
-  }, [isComputing]);
-
   useEffect(() => {
     const host = mountRef.current;
     if (!host) return;
@@ -22,7 +16,7 @@ export default function EarthHologramGlobe({
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setClearColor(0x000000, 0);
     renderer.setSize(size, size);
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setPixelRatio(Math.min(1.25, window.devicePixelRatio || 1));
     renderer.domElement.style.display = 'block';
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
@@ -60,7 +54,7 @@ export default function EarthHologramGlobe({
 
       const positions = [];
       const radius = 5;
-      const totalPoints = 50000;
+      const totalPoints = 28000;
 
       for (let i = 0; i < totalPoints; i++) {
         const phi = Math.acos(-1 + (2 * i) / totalPoints);
@@ -102,11 +96,14 @@ export default function EarthHologramGlobe({
 
     const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
     let rafId = 0;
-    const baseSpeed = 0.0018;
+    const baseSpeedRadPerSec = 0.108; // ~0.0018 * 60fps
+    let lastTs = performance.now();
 
-    const animate = () => {
+    const animate = (ts) => {
       if (!prefersReducedMotion) {
-        globeGroup.rotation.y += isComputingRef.current ? baseSpeed * 3 : baseSpeed;
+        const dt = Math.min(0.12, Math.max(0, (ts - lastTs) / 1000));
+        lastTs = ts;
+        globeGroup.rotation.y += baseSpeedRadPerSec * dt;
       }
       renderer.render(scene, camera);
       rafId = requestAnimationFrame(animate);
@@ -127,7 +124,7 @@ export default function EarthHologramGlobe({
   }, [size]);
 
   return (
-    <div className="earth-holo-container" style={{ ['--earth-size']: `${size}px` }}>
+    <div className={`earth-holo-container ${isComputing ? 'computing' : ''}`} style={{ ['--earth-size']: `${size}px` }}>
       <div className="earth-holo-glow" aria-hidden="true" />
       <div className="earth-holo-shell" aria-hidden="true">
         <div ref={mountRef} className="earth-holo-canvas" />

@@ -31,7 +31,7 @@ export const SIGNAL_URL = (() => {
   return typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001';
 })();
 export const DEFAULT_ROOM = import.meta.env.VITE_DEFAULT_ROOM || 'hackathon-demo';
-export const ENGINE_MODEL_ID = import.meta.env.VITE_ENGINE_MODEL || 'Llama-3.2-3B-Instruct-q4f16_1-MLC';
+export const ENGINE_MODEL_ID = import.meta.env.VITE_ENGINE_MODEL || 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
 
 // Timeouts
 export const HEARTBEAT_INTERVAL_MS = 5000;

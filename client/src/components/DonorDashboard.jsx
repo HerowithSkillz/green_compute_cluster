@@ -15,7 +15,10 @@ function PeerPill({ id, username, role, status }) {
   const label = (username || '').trim() || id.slice(0, 8);
   return (
     <div className={`peer-pill peer-pill-${status || 'closed'}`}>
-      <div className="peer-pill-id" title={id}>{label}</div>
+      <div className="peer-pill-head">
+        <span className="peer-pill-icon" aria-hidden="true">🖥️</span>
+        <div className="peer-pill-id" title={id}>{label}</div>
+      </div>
       <div className={`peer-pill-role peer-pill-role-${role || 'unknown'}`}>
         {role === 'donor' ? 'Donor' : role === 'receiver' ? 'Receiver' : '?'}
       </div>
@@ -171,7 +174,7 @@ export default function DonorDashboard({
           </div>
           <div className="globe-stage">
             <EarthHologramGlobe
-              size={320}
+              size={360}
               isComputing={isComputing}
               connectedReceivers={peers.filter((p) => p.role === 'receiver').length}
             />
