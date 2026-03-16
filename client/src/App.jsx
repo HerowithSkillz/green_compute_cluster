@@ -12,6 +12,7 @@ import { getEngine, hasWebGPU, getGPUInfo } from './lib/webllm.js';
 import { DEFAULT_ROOM, HEARTBEAT_INTERVAL_MS, ENGINE_MODEL_ID } from './lib/constants.js';
 
 function App() {
+  const sproutIconUrl = `${import.meta.env.BASE_URL}sprout-icon.svg`;
   const [myPeerId] = useState(() => crypto.randomUUID());
   const [username, setUsername] = useState(() => localStorage.getItem('gcc_username') || '');
   const [roomInput, setRoomInput] = useState(DEFAULT_ROOM);
@@ -256,7 +257,7 @@ function App() {
       <header className="app-header">
         <h1 className="brand-title">
           Green Compute Cluster
-          <img src="/sprout-icon.svg" alt="sprout" className="brand-sprout" />
+          <img src={sproutIconUrl} alt="sprout" className="brand-sprout" />
         </h1>
         <span className="peer-id" title={myPeerId}>Node: {username.trim() || myPeerId.slice(0, 8)}</span>
       </header>
