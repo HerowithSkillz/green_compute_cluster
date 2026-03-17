@@ -2,13 +2,16 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSignaling } from './hooks/useSignaling.js';
 import { useWebRTC } from './hooks/useWebRTC.js';
 import { useAgenticSwarm } from './hooks/useAgenticSwarm.js';
+import { useRenderFarm } from './hooks/useRenderFarm.js';
 import ClusterDashboard from './components/ClusterDashboard.jsx';
 import InferenceTerminal from './components/InferenceTerminal.jsx';
 import SwarmLog from './components/SwarmLog.jsx';
 import HolographicGlobe from './components/HolographicGlobe.jsx';
 import DonorDashboard from './components/DonorDashboard.jsx';
+import RenderFarmPanel from './components/RenderFarmPanel.jsx';
 import { MSG, encodeMessage } from './lib/protocol.js';
 import { getEngine, hasWebGPU, getGPUInfo } from './lib/webllm.js';
+import { renderFrameRange } from './lib/renderFarmWorker.js';
 import { DEFAULT_ROOM, HEARTBEAT_INTERVAL_MS, ENGINE_MODEL_ID } from './lib/constants.js';
 
 function App() {
@@ -25,6 +28,7 @@ function App() {
   const [loadProgress, setLoadProgress] = useState(null);
   const [gpuAvailable] = useState(() => hasWebGPU());
   const [role, setRole] = useState(null); // 'donor' | 'receiver'
+  const [activeTab, setActiveTab] = useState('inference'); // 'inference' | 'render' (receiver only)
   const donorIndexRef = useRef(0); // round-robin counter for donor selection
   const [isServingInference, setIsServingInference] = useState(false);
   const [servedCount, setServedCount] = useState(0);
@@ -39,6 +43,12 @@ function App() {
   const signaling = useSignaling(myPeerId);
   const webrtc = useWebRTC(myPeerId, signaling.sendSignal);
   const swarm = useAgenticSwarm(myPeerId, signaling.peers, webrtc.channelStatus, webrtc.sendToPeer);
+  const renderFarm = useRenderFarm(
+    myPeerId,
+    signaling.peers.filter(p => p.role === 'donor'),
+    webrtc.sendToPeer,
+    webrtc.broadcastToPeers
+  );
 
   // Wire signaling callbacks to WebRTC
   useEffect(() => {
@@ -52,6 +62,81 @@ function App() {
       webrtc.handleSignal(from, payload);
     };
   }, [signaling, webrtc]);
+
+  // Handle remote inference request (this node runs inference for another peer)
+  const handleRemoteInferenceRequest = useCallback(async (fromPeerId, requestId, prompt, maxTokens) => {
+    setServedCount((c) => c + 1);
+    setLastServedAt(Date.now());
+    setIsServingInference(true);
+    try {
+      const { generate } = await import(/* @vite-ignore */ './lib/webllm.js');
+      await generate(prompt, (token) => {
+        webrtc.sendToPeer(fromPeerId, encodeMessage(MSG.INFER_TOKEN, { requestId, token }), 'inference');
+      }, maxTokens);
+      webrtc.sendToPeer(fromPeerId, encodeMessage(MSG.INFER_DONE, { requestId }), 'control');
+    } catch (err) {
+      webrtc.sendToPeer(fromPeerId, encodeMessage(MSG.INFER_ERROR, { requestId, error: err.message }), 'control');
+    } finally {
+      setIsServingInference(false);
+    }
+  }, [webrtc]);
+
+  // Handle render job request (this node renders frames for another peer)
+  const handleRenderJob = useCallback(async (fromPeerId, payload) => {
+    const { jobId, sceneJSON, startFrame, endFrame, fps } = payload;
+
+    try {
+      console.log(`[Render] Starting job ${jobId.slice(0, 8)}: frames ${startFrame}-${endFrame} @ ${fps} fps`);
+
+      await renderFrameRange({
+        sceneJSON,
+        startFrame,
+        endFrame,
+        fps,
+        onFrame: async ({ frameIndex, dataUrl }) => {
+          webrtc.sendToPeer(
+            fromPeerId,
+            encodeMessage(MSG.RENDER_FRAME, {
+              jobId,
+              frameIndex,
+              blob: dataUrl,
+            }),
+            'control'
+          );
+        },
+        onProgress: (progress) => {
+          webrtc.sendToPeer(
+            fromPeerId,
+            encodeMessage(MSG.RENDER_PROGRESS, {
+              jobId,
+              progress,
+            }),
+            'control'
+          );
+
+          console.log(
+            `[Render] Job ${jobId.slice(0, 8)}: ${Math.round(progress * 100)}%`
+          );
+        },
+      });
+
+      // Send completion
+      webrtc.sendToPeer(
+        fromPeerId,
+        encodeMessage(MSG.RENDER_DONE, { jobId }),
+        'control'
+      );
+
+      console.log(`[Render] Job ${jobId.slice(0, 8)} complete`);
+    } catch (err) {
+      console.error(`[Render] Job ${jobId.slice(0, 8)} failed:`, err);
+      webrtc.sendToPeer(
+        fromPeerId,
+        encodeMessage(MSG.RENDER_ABORT, { jobId, reason: err.message }),
+        'control'
+      );
+    }
+  }, [webrtc]);
 
   // Handle incoming DataChannel messages
   useEffect(() => {
@@ -117,9 +202,33 @@ function App() {
         case MSG.TASK_REJECT:
           // Handle rejection — could fallback to local
           break;
+
+        case MSG.RENDER_FRAME:
+          renderFarm.handleRenderFrame(fromPeerId, msg.payload);
+          break;
+
+        case MSG.RENDER_DONE:
+          renderFarm.handleRenderDone(fromPeerId, msg.payload);
+          break;
+
+        case MSG.RENDER_ABORT:
+          renderFarm.handleRenderAbort(fromPeerId, msg.payload);
+          break;
+
+        case MSG.RENDER_PROGRESS:
+          renderFarm.handleRenderProgress(fromPeerId, msg.payload);
+          break;
+
+        case MSG.RENDER_START:
+          if (role === 'receiver') {
+            // Receivers don't render jobs
+            break;
+          }
+          handleRenderJob(fromPeerId, msg.payload);
+          break;
       }
     };
-  }, [webrtc, swarm, role]);
+  }, [webrtc, swarm, renderFarm, role, handleRenderJob]);
 
   // Heartbeat interval
   useEffect(() => {
@@ -144,24 +253,6 @@ function App() {
       })();
     }
   }, [webrtc.openChannelCount, webrtc]);
-
-  // Handle remote inference request (this node runs inference for another peer)
-  const handleRemoteInferenceRequest = useCallback(async (fromPeerId, requestId, prompt, maxTokens) => {
-    setServedCount((c) => c + 1);
-    setLastServedAt(Date.now());
-    setIsServingInference(true);
-    try {
-      const { generate } = await import(/* @vite-ignore */ './lib/webllm.js');
-      await generate(prompt, (token) => {
-        webrtc.sendToPeer(fromPeerId, encodeMessage(MSG.INFER_TOKEN, { requestId, token }), 'inference');
-      }, maxTokens);
-      webrtc.sendToPeer(fromPeerId, encodeMessage(MSG.INFER_DONE, { requestId }), 'control');
-    } catch (err) {
-      webrtc.sendToPeer(fromPeerId, encodeMessage(MSG.INFER_ERROR, { requestId, error: err.message }), 'control');
-    } finally {
-      setIsServingInference(false);
-    }
-  }, [webrtc]);
 
   // Join room
   const handleJoinRoom = useCallback(() => {
@@ -383,12 +474,42 @@ function App() {
                   <SwarmLog logs={swarm.swarmLog} />
                 </div>
                 <div className="col-right">
-                  <InferenceTerminal
-                    onSubmit={handlePromptSubmit}
-                    tokens={tokens}
-                    isGenerating={isGenerating}
-                    streamingFrom={streamingFrom}
-                  />
+                  <div className="tab-container">
+                    <div className="tab-buttons">
+                      <button
+                        className={`tab-btn ${activeTab === 'inference' ? 'tab-active' : ''}`}
+                        onClick={() => setActiveTab('inference')}
+                      >
+                        💬 LLM Inference
+                      </button>
+                      <button
+                        className={`tab-btn ${activeTab === 'render' ? 'tab-active' : ''}`}
+                        onClick={() => setActiveTab('render')}
+                      >
+                        🎬 Render Farm
+                      </button>
+                    </div>
+                    <div className="tab-content">
+                      {activeTab === 'inference' && (
+                        <InferenceTerminal
+                          onSubmit={handlePromptSubmit}
+                          tokens={tokens}
+                          isGenerating={isGenerating}
+                          streamingFrom={streamingFrom}
+                        />
+                      )}
+                      {activeTab === 'render' && (
+                        <RenderFarmPanel
+                          onSubmitRenderJob={renderFarm.submitRenderJob}
+                          renderLog={renderFarm.renderLog}
+                          isRenderingActive={renderFarm.isRenderingActive}
+                          getRenderJobStatus={renderFarm.getRenderJobStatus}
+                          workers={signaling.peers.filter(p => p.role === 'donor')}
+                          latestOutput={renderFarm.latestOutput}
+                        />
+                      )}
+                    </div>
+                  </div>
                 </div>
               </>
             )}

@@ -1,0 +1,626 @@
+{
+  "metadata": {
+    "version": 4.6,
+    "type": "Object",
+    "generator": "GreenComputeDistributedRenderDemo"
+  },
+  "geometries": [
+    {
+      "uuid": "geo-core-icosa",
+      "type": "IcosahedronGeometry",
+      "radius": 1.05,
+      "detail": 2
+    },
+    {
+      "uuid": "geo-core-shell",
+      "type": "SphereGeometry",
+      "radius": 1.35,
+      "widthSegments": 36,
+      "heightSegments": 24
+    },
+    {
+      "uuid": "geo-orbit-ring-main",
+      "type": "TorusGeometry",
+      "radius": 2.2,
+      "tube": 0.08,
+      "radialSegments": 20,
+      "tubularSegments": 180
+    },
+    {
+      "uuid": "geo-orbit-ring-thin",
+      "type": "TorusGeometry",
+      "radius": 3.1,
+      "tube": 0.045,
+      "radialSegments": 16,
+      "tubularSegments": 200
+    },
+    {
+      "uuid": "geo-donor-pod",
+      "type": "SphereGeometry",
+      "radius": 0.35,
+      "widthSegments": 24,
+      "heightSegments": 18
+    },
+    {
+      "uuid": "geo-receiver-pod",
+      "type": "OctahedronGeometry",
+      "radius": 0.52,
+      "detail": 0
+    },
+    {
+      "uuid": "geo-link-beam",
+      "type": "CylinderGeometry",
+      "radiusTop": 0.03,
+      "radiusBottom": 0.03,
+      "height": 4.5,
+      "radialSegments": 12
+    },
+    {
+      "uuid": "geo-platform",
+      "type": "CylinderGeometry",
+      "radiusTop": 8.4,
+      "radiusBottom": 8.8,
+      "height": 0.28,
+      "radialSegments": 64
+    },
+    {
+      "uuid": "geo-platform-inner",
+      "type": "CylinderGeometry",
+      "radiusTop": 5.6,
+      "radiusBottom": 5.8,
+      "height": 0.12,
+      "radialSegments": 64
+    },
+    {
+      "uuid": "geo-pillar",
+      "type": "CylinderGeometry",
+      "radiusTop": 0.22,
+      "radiusBottom": 0.3,
+      "height": 2.3,
+      "radialSegments": 12
+    },
+    {
+      "uuid": "geo-data-packet",
+      "type": "SphereGeometry",
+      "radius": 0.1,
+      "widthSegments": 12,
+      "heightSegments": 10
+    },
+    {
+      "uuid": "geo-antenna",
+      "type": "ConeGeometry",
+      "radius": 0.14,
+      "height": 0.5,
+      "radialSegments": 12
+    },
+    {
+      "uuid": "geo-crystal",
+      "type": "TetrahedronGeometry",
+      "radius": 0.28,
+      "detail": 0
+    },
+    {
+      "uuid": "geo-star",
+      "type": "SphereGeometry",
+      "radius": 0.05,
+      "widthSegments": 8,
+      "heightSegments": 6
+    }
+  ],
+  "materials": [
+    {
+      "uuid": "mat-core",
+      "type": "MeshStandardMaterial",
+      "color": 47615,
+      "emissive": 1637632,
+      "emissiveIntensity": 1.7,
+      "metalness": 0.38,
+      "roughness": 0.25
+    },
+    {
+      "uuid": "mat-core-shell",
+      "type": "MeshStandardMaterial",
+      "color": 294911,
+      "emissive": 65484,
+      "emissiveIntensity": 0.55,
+      "metalness": 0.1,
+      "roughness": 0.4,
+      "transparent": true,
+      "opacity": 0.45
+    },
+    {
+      "uuid": "mat-ring-main",
+      "type": "MeshStandardMaterial",
+      "color": 65535,
+      "emissive": 65535,
+      "emissiveIntensity": 1.1,
+      "metalness": 0.2,
+      "roughness": 0.35
+    },
+    {
+      "uuid": "mat-ring-thin",
+      "type": "MeshStandardMaterial",
+      "color": 7995391,
+      "emissive": 2245887,
+      "emissiveIntensity": 0.7,
+      "metalness": 0.18,
+      "roughness": 0.5
+    },
+    {
+      "uuid": "mat-donor",
+      "type": "MeshStandardMaterial",
+      "color": 5104896,
+      "emissive": 2097408,
+      "emissiveIntensity": 0.85,
+      "metalness": 0.18,
+      "roughness": 0.5
+    },
+    {
+      "uuid": "mat-receiver",
+      "type": "MeshStandardMaterial",
+      "color": 16753920,
+      "emissive": 16737792,
+      "emissiveIntensity": 1.15,
+      "metalness": 0.2,
+      "roughness": 0.44
+    },
+    {
+      "uuid": "mat-beam",
+      "type": "MeshStandardMaterial",
+      "color": 11184895,
+      "emissive": 65535,
+      "emissiveIntensity": 0.9,
+      "metalness": 0.08,
+      "roughness": 0.6,
+      "transparent": true,
+      "opacity": 0.65
+    },
+    {
+      "uuid": "mat-platform",
+      "type": "MeshStandardMaterial",
+      "color": 986895,
+      "metalness": 0.05,
+      "roughness": 0.95
+    },
+    {
+      "uuid": "mat-platform-inner",
+      "type": "MeshStandardMaterial",
+      "color": 1250067,
+      "emissive": 131586,
+      "emissiveIntensity": 0.25,
+      "metalness": 0.03,
+      "roughness": 0.9
+    },
+    {
+      "uuid": "mat-pillar",
+      "type": "MeshStandardMaterial",
+      "color": 3355443,
+      "emissive": 52428,
+      "emissiveIntensity": 0.35,
+      "metalness": 0.1,
+      "roughness": 0.72
+    },
+    {
+      "uuid": "mat-data",
+      "type": "MeshStandardMaterial",
+      "color": 16773376,
+      "emissive": 16753920,
+      "emissiveIntensity": 0.9,
+      "metalness": 0.1,
+      "roughness": 0.5
+    },
+    {
+      "uuid": "mat-antenna",
+      "type": "MeshStandardMaterial",
+      "color": 6724095,
+      "emissive": 4521983,
+      "emissiveIntensity": 0.55,
+      "metalness": 0.15,
+      "roughness": 0.62
+    },
+    {
+      "uuid": "mat-crystal",
+      "type": "MeshStandardMaterial",
+      "color": 9502719,
+      "emissive": 52479,
+      "emissiveIntensity": 0.7,
+      "metalness": 0.12,
+      "roughness": 0.4
+    },
+    {
+      "uuid": "mat-star",
+      "type": "MeshBasicMaterial",
+      "color": 12582911
+    }
+  ],
+  "object": {
+    "uuid": "scene-root-main",
+    "type": "Scene",
+    "name": "DistributedRenderingJudgeScene",
+    "background": 197379,
+    "children": [
+      {
+        "uuid": "camera-main",
+        "type": "PerspectiveCamera",
+        "name": "MainCamera",
+        "fov": 44,
+        "aspect": 1.7777778,
+        "near": 0.1,
+        "far": 140,
+        "position": [0, 3.1, 10.4],
+        "rotation": [-0.19, 0, 0]
+      },
+      {
+        "uuid": "light-ambient",
+        "type": "AmbientLight",
+        "color": 8947848,
+        "intensity": 0.42
+      },
+      {
+        "uuid": "light-key",
+        "type": "DirectionalLight",
+        "color": 16777215,
+        "intensity": 1.3,
+        "position": [5.5, 7.2, 4.3]
+      },
+      {
+        "uuid": "light-cyan",
+        "type": "PointLight",
+        "color": 65535,
+        "intensity": 2.7,
+        "distance": 22,
+        "decay": 2,
+        "position": [-2.8, 1.3, -2.6]
+      },
+      {
+        "uuid": "light-green",
+        "type": "PointLight",
+        "color": 5104896,
+        "intensity": 2.35,
+        "distance": 22,
+        "decay": 2,
+        "position": [2.8, 1.2, 2.6]
+      },
+
+      {
+        "uuid": "mesh-platform",
+        "type": "Mesh",
+        "geometry": "geo-platform",
+        "material": "mat-platform",
+        "position": [0, -1.45, 0]
+      },
+      {
+        "uuid": "mesh-platform-inner",
+        "type": "Mesh",
+        "geometry": "geo-platform-inner",
+        "material": "mat-platform-inner",
+        "position": [0, -1.18, 0]
+      },
+
+      {
+        "uuid": "mesh-core",
+        "type": "Mesh",
+        "geometry": "geo-core-icosa",
+        "material": "mat-core",
+        "position": [0, 0.2, 0]
+      },
+      {
+        "uuid": "mesh-core-shell",
+        "type": "Mesh",
+        "geometry": "geo-core-shell",
+        "material": "mat-core-shell",
+        "position": [0, 0.2, 0]
+      },
+
+      {
+        "uuid": "mesh-ring-main-x",
+        "type": "Mesh",
+        "geometry": "geo-orbit-ring-main",
+        "material": "mat-ring-main",
+        "position": [0, 0.2, 0],
+        "rotation": [1.5707963, 0, 0]
+      },
+      {
+        "uuid": "mesh-ring-main-y",
+        "type": "Mesh",
+        "geometry": "geo-orbit-ring-main",
+        "material": "mat-ring-main",
+        "position": [0, 0.2, 0],
+        "rotation": [0, 1.5707963, 0]
+      },
+      {
+        "uuid": "mesh-ring-thin-a",
+        "type": "Mesh",
+        "geometry": "geo-orbit-ring-thin",
+        "material": "mat-ring-thin",
+        "position": [0, 0.2, 0],
+        "rotation": [0.62, 0.2, 0]
+      },
+      {
+        "uuid": "mesh-ring-thin-b",
+        "type": "Mesh",
+        "geometry": "geo-orbit-ring-thin",
+        "material": "mat-ring-thin",
+        "position": [0, 0.2, 0],
+        "rotation": [2.35, -0.4, 0]
+      },
+
+      {
+        "uuid": "receiver-node",
+        "type": "Mesh",
+        "geometry": "geo-receiver-pod",
+        "material": "mat-receiver",
+        "position": [0, 1.55, 0]
+      },
+
+      {
+        "uuid": "donor-1",
+        "type": "Mesh",
+        "geometry": "geo-donor-pod",
+        "material": "mat-donor",
+        "position": [4.6, 0.7, 0]
+      },
+      {
+        "uuid": "donor-2",
+        "type": "Mesh",
+        "geometry": "geo-donor-pod",
+        "material": "mat-donor",
+        "position": [3.25, 0.7, 3.25]
+      },
+      {
+        "uuid": "donor-3",
+        "type": "Mesh",
+        "geometry": "geo-donor-pod",
+        "material": "mat-donor",
+        "position": [0, 0.7, 4.6]
+      },
+      {
+        "uuid": "donor-4",
+        "type": "Mesh",
+        "geometry": "geo-donor-pod",
+        "material": "mat-donor",
+        "position": [-3.25, 0.7, 3.25]
+      },
+      {
+        "uuid": "donor-5",
+        "type": "Mesh",
+        "geometry": "geo-donor-pod",
+        "material": "mat-donor",
+        "position": [-4.6, 0.7, 0]
+      },
+      {
+        "uuid": "donor-6",
+        "type": "Mesh",
+        "geometry": "geo-donor-pod",
+        "material": "mat-donor",
+        "position": [-3.25, 0.7, -3.25]
+      },
+      {
+        "uuid": "donor-7",
+        "type": "Mesh",
+        "geometry": "geo-donor-pod",
+        "material": "mat-donor",
+        "position": [0, 0.7, -4.6]
+      },
+      {
+        "uuid": "donor-8",
+        "type": "Mesh",
+        "geometry": "geo-donor-pod",
+        "material": "mat-donor",
+        "position": [3.25, 0.7, -3.25]
+      },
+
+      {
+        "uuid": "beam-1",
+        "type": "Mesh",
+        "geometry": "geo-link-beam",
+        "material": "mat-beam",
+        "position": [2.3, 0.45, 0],
+        "rotation": [0, 0, 1.5707963]
+      },
+      {
+        "uuid": "beam-2",
+        "type": "Mesh",
+        "geometry": "geo-link-beam",
+        "material": "mat-beam",
+        "position": [-2.3, 0.45, 0],
+        "rotation": [0, 0, 1.5707963]
+      },
+      {
+        "uuid": "beam-3",
+        "type": "Mesh",
+        "geometry": "geo-link-beam",
+        "material": "mat-beam",
+        "position": [0, 0.45, 2.3],
+        "rotation": [1.5707963, 0, 0]
+      },
+      {
+        "uuid": "beam-4",
+        "type": "Mesh",
+        "geometry": "geo-link-beam",
+        "material": "mat-beam",
+        "position": [0, 0.45, -2.3],
+        "rotation": [1.5707963, 0, 0]
+      },
+
+      {
+        "uuid": "pillar-1",
+        "type": "Mesh",
+        "geometry": "geo-pillar",
+        "material": "mat-pillar",
+        "position": [2.9, -0.3, 2.9]
+      },
+      {
+        "uuid": "pillar-2",
+        "type": "Mesh",
+        "geometry": "geo-pillar",
+        "material": "mat-pillar",
+        "position": [-2.9, -0.3, 2.9]
+      },
+      {
+        "uuid": "pillar-3",
+        "type": "Mesh",
+        "geometry": "geo-pillar",
+        "material": "mat-pillar",
+        "position": [-2.9, -0.3, -2.9]
+      },
+      {
+        "uuid": "pillar-4",
+        "type": "Mesh",
+        "geometry": "geo-pillar",
+        "material": "mat-pillar",
+        "position": [2.9, -0.3, -2.9]
+      },
+
+      {
+        "uuid": "antenna-1",
+        "type": "Mesh",
+        "geometry": "geo-antenna",
+        "material": "mat-antenna",
+        "position": [2.9, 0.95, 2.9]
+      },
+      {
+        "uuid": "antenna-2",
+        "type": "Mesh",
+        "geometry": "geo-antenna",
+        "material": "mat-antenna",
+        "position": [-2.9, 0.95, 2.9]
+      },
+      {
+        "uuid": "antenna-3",
+        "type": "Mesh",
+        "geometry": "geo-antenna",
+        "material": "mat-antenna",
+        "position": [-2.9, 0.95, -2.9]
+      },
+      {
+        "uuid": "antenna-4",
+        "type": "Mesh",
+        "geometry": "geo-antenna",
+        "material": "mat-antenna",
+        "position": [2.9, 0.95, -2.9]
+      },
+
+      {
+        "uuid": "packet-1",
+        "type": "Mesh",
+        "geometry": "geo-data-packet",
+        "material": "mat-data",
+        "position": [1.7, 0.95, 1.3]
+      },
+      {
+        "uuid": "packet-2",
+        "type": "Mesh",
+        "geometry": "geo-data-packet",
+        "material": "mat-data",
+        "position": [-1.9, 0.9, 1.1]
+      },
+      {
+        "uuid": "packet-3",
+        "type": "Mesh",
+        "geometry": "geo-data-packet",
+        "material": "mat-data",
+        "position": [-1.3, 1.05, -1.8]
+      },
+      {
+        "uuid": "packet-4",
+        "type": "Mesh",
+        "geometry": "geo-data-packet",
+        "material": "mat-data",
+        "position": [1.8, 1.0, -1.4]
+      },
+      {
+        "uuid": "packet-5",
+        "type": "Mesh",
+        "geometry": "geo-crystal",
+        "material": "mat-crystal",
+        "position": [0, 1.95, 0]
+      },
+
+      {
+        "uuid": "star-1",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [6.8, 4.9, -5.6]
+      },
+      {
+        "uuid": "star-2",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [-7.3, 5.1, -4.9]
+      },
+      {
+        "uuid": "star-3",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [5.5, 6.4, 4.7]
+      },
+      {
+        "uuid": "star-4",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [-5.8, 4.6, 5.8]
+      },
+      {
+        "uuid": "star-5",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [0.2, 6.9, -6.6]
+      },
+      {
+        "uuid": "star-6",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [1.2, 6.4, 6.4]
+      },
+      {
+        "uuid": "star-7",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [-1.5, 5.9, 7.1]
+      },
+      {
+        "uuid": "star-8",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [7.1, 3.8, 1.8]
+      },
+      {
+        "uuid": "star-9",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [-7.1, 4.2, -1.9]
+      },
+      {
+        "uuid": "star-10",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [4.2, 7.1, -2.6]
+      },
+      {
+        "uuid": "star-11",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [-4.6, 6.8, 2.5]
+      },
+      {
+        "uuid": "star-12",
+        "type": "Mesh",
+        "geometry": "geo-star",
+        "material": "mat-star",
+        "position": [0, 7.4, 0]
+      }
+    ]
+  }
+}
