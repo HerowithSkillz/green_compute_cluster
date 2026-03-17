@@ -5,7 +5,6 @@ import { useAgenticSwarm } from './hooks/useAgenticSwarm.js';
 import { useRenderFarm } from './hooks/useRenderFarm.js';
 import ClusterDashboard from './components/ClusterDashboard.jsx';
 import InferenceTerminal from './components/InferenceTerminal.jsx';
-import SwarmLog from './components/SwarmLog.jsx';
 import HolographicGlobe from './components/HolographicGlobe.jsx';
 import DonorDashboard from './components/DonorDashboard.jsx';
 import RenderFarmPanel from './components/RenderFarmPanel.jsx';
@@ -31,6 +30,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('inference'); // 'inference' | 'render' (receiver only)
   const donorIndexRef = useRef(0); // round-robin counter for donor selection
   const [isServingInference, setIsServingInference] = useState(false);
+  const [activeRenderJobs, setActiveRenderJobs] = useState(0);
   const [servedCount, setServedCount] = useState(0);
   const [lastServedAt, setLastServedAt] = useState(null);
 
@@ -84,6 +84,7 @@ function App() {
   // Handle render job request (this node renders frames for another peer)
   const handleRenderJob = useCallback(async (fromPeerId, payload) => {
     const { jobId, sceneJSON, startFrame, endFrame, fps } = payload;
+    setActiveRenderJobs((count) => count + 1);
 
     try {
       console.log(`[Render] Starting job ${jobId.slice(0, 8)}: frames ${startFrame}-${endFrame} @ ${fps} fps`);
@@ -135,6 +136,8 @@ function App() {
         encodeMessage(MSG.RENDER_ABORT, { jobId, reason: err.message }),
         'control'
       );
+    } finally {
+      setActiveRenderJobs((count) => Math.max(0, count - 1));
     }
   }, [webrtc]);
 
@@ -343,6 +346,8 @@ function App() {
     setStreamingFrom(null);
   }, [role, signaling.peers, webrtc.channelStatus, webrtc]);
 
+  const isDonorComputing = isServingInference || activeRenderJobs > 0;
+
   return (
     <div className="app">
       <header className="app-header">
@@ -453,10 +458,9 @@ function App() {
                   openChannelCount={webrtc.openChannelCount}
                   modelStatus={modelStatus}
                   loadProgress={loadProgress}
-                  isComputing={isServingInference}
+                  isComputing={isDonorComputing}
                   servedCount={servedCount}
                   lastServedAt={lastServedAt}
-                  logs={swarm.swarmLog}
                 />
               </div>
             ) : (
@@ -471,7 +475,6 @@ function App() {
                     openChannelCount={webrtc.openChannelCount}
                     myRole={role}
                   />
-                  <SwarmLog logs={swarm.swarmLog} />
                 </div>
                 <div className="col-right">
                   <div className="tab-container">
