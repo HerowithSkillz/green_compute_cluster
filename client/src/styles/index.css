@@ -1153,6 +1153,79 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   padding: 10px 0;
 }
 
+.compute-total-card {
+  border: 1px solid rgba(0, 255, 136, 0.25);
+  background: rgba(0, 255, 136, 0.06);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.compute-total-value {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.compute-total-meta {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.leaderboard-table-wrap {
+  border: 1px solid rgba(30, 45, 69, 0.7);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(15, 22, 35, 0.55);
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  font-size: 0.72rem;
+  padding: 8px 9px;
+  border-bottom: 1px solid rgba(30, 45, 69, 0.55);
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.leaderboard-table th {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  background: rgba(10, 15, 25, 0.65);
+}
+
+.leaderboard-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lb-status {
+  text-transform: capitalize;
+  font-weight: 700;
+}
+
+.lb-status-open {
+  color: var(--accent);
+}
+
+.lb-status-connecting {
+  color: #f4b545;
+}
+
+.lb-status-closed {
+  color: #f17a7a;
+}
+
 @media (max-width: 1100px) {
   .donor-grid {
     grid-template-columns: 1fr;

@@ -32,6 +32,8 @@ function App() {
   const [isServingInference, setIsServingInference] = useState(false);
   const [activeRenderJobs, setActiveRenderJobs] = useState(0);
   const [servedCount, setServedCount] = useState(0);
+  const [renderJobsServed, setRenderJobsServed] = useState(0);
+  const [renderedFramesServed, setRenderedFramesServed] = useState(0);
   const [lastServedAt, setLastServedAt] = useState(null);
 
   // Auto-select receiver when no WebGPU
@@ -84,6 +86,7 @@ function App() {
   // Handle render job request (this node renders frames for another peer)
   const handleRenderJob = useCallback(async (fromPeerId, payload) => {
     const { jobId, sceneJSON, startFrame, endFrame, fps } = payload;
+    const totalFramesInJob = Math.max(0, endFrame - startFrame + 1);
     setActiveRenderJobs((count) => count + 1);
 
     try {
@@ -129,6 +132,8 @@ function App() {
       );
 
       console.log(`[Render] Job ${jobId.slice(0, 8)} complete`);
+      setRenderJobsServed((count) => count + 1);
+      setRenderedFramesServed((count) => count + totalFramesInJob);
     } catch (err) {
       console.error(`[Render] Job ${jobId.slice(0, 8)} failed:`, err);
       webrtc.sendToPeer(
@@ -460,6 +465,8 @@ function App() {
                   loadProgress={loadProgress}
                   isComputing={isDonorComputing}
                   servedCount={servedCount}
+                  renderJobsServed={renderJobsServed}
+                  renderedFramesServed={renderedFramesServed}
                   lastServedAt={lastServedAt}
                 />
               </div>

@@ -39,6 +39,8 @@ export default function DonorDashboard({
   loadProgress,
   isComputing,
   servedCount,
+  renderJobsServed,
+  renderedFramesServed,
   lastServedAt,
 }) {
   const peerStats = useMemo(() => {
@@ -68,6 +70,30 @@ export default function DonorDashboard({
       avgRtt,
     };
   }, [myPeerId, peers, channelStatus, rttMap]);
+
+  const totalComputePower = (servedCount * 10) + renderedFramesServed;
+
+  const leaderboard = useMemo(() => {
+    const rows = peerStats.donors.map((p) => {
+      const isSelf = Boolean(p.self);
+      const status = isSelf ? 'open' : (channelStatus.get(p.peerId) || 'closed');
+      const rtt = isSelf ? peerStats.avgRtt : rttMap?.get(p.peerId);
+      const liveBase = status === 'open' ? 30 : 8;
+      const latencyBonus = typeof rtt === 'number' ? Math.max(0, 20 - Math.min(20, Math.round(rtt / 10))) : 0;
+      const contributionBonus = isSelf ? Math.min(50, Math.round(totalComputePower / 20)) : 0;
+      const score = liveBase + latencyBonus + contributionBonus;
+      return {
+        peerId: p.peerId,
+        username: (p.username || '').trim() || p.peerId.slice(0, 8),
+        status,
+        isSelf,
+        score,
+        compute: isSelf ? totalComputePower : 0,
+      };
+    });
+    rows.sort((a, b) => b.score - a.score || b.compute - a.compute || a.username.localeCompare(b.username));
+    return rows.slice(0, 5);
+  }, [peerStats.donors, peerStats.avgRtt, channelStatus, rttMap, totalComputePower]);
 
   const activityPct = isComputing ? 92 : openChannelCount > 0 ? 24 : 6;
 
@@ -230,6 +256,45 @@ export default function DonorDashboard({
                   status={p.self ? 'open' : channelStatus.get(p.peerId)}
                 />
               ))}
+            </div>
+          </div>
+
+          <div className="network-section">
+            <div className="network-title">Total Compute Contributed</div>
+            <div className="compute-total-card">
+              <div className="compute-total-value">{totalComputePower.toLocaleString()} CU</div>
+              <div className="compute-total-meta">
+                {servedCount} inference req · {renderJobsServed} render jobs · {renderedFramesServed} frames
+              </div>
+            </div>
+          </div>
+
+          <div className="network-section">
+            <div className="network-title">Leaderboard</div>
+            <div className="leaderboard-table-wrap">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Node</th>
+                    <th>Status</th>
+                    <th>Compute</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboard.map((row, idx) => (
+                    <tr key={row.peerId}>
+                      <td>{idx + 1}</td>
+                      <td title={row.peerId}>
+                        {row.username}
+                        {row.isSelf ? ' (You)' : ''}
+                      </td>
+                      <td className={`lb-status lb-status-${row.status}`}>{row.status}</td>
+                      <td>{row.compute > 0 ? `${row.compute.toLocaleString()} CU` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
